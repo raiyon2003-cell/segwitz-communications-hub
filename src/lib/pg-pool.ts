@@ -11,6 +11,9 @@ export function createPgPool() {
 
   return new Pool({
     connectionString: cleanUrl,
+    max: process.env.VERCEL ? 1 : 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
     ...(isSupabase ? { ssl: { rejectUnauthorized: false } } : {}),
   });
 }
