@@ -49,13 +49,14 @@ export default async function HistoryPage() {
               <TableHead>Department</TableHead>
               <TableHead>Sent By</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Message ID</TableHead>
               <TableHead>Date</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {emails.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={8} className="text-center text-muted-foreground">
                   No emails sent yet
                 </TableCell>
               </TableRow>
@@ -75,6 +76,9 @@ export default async function HistoryPage() {
                     <Badge variant={statusVariant[email.status]}>
                       {email.status}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="max-w-[160px] truncate font-mono text-xs">
+                    {email.brevoMessageId || "—"}
                   </TableCell>
                   <TableCell>{formatDateTime(email.sentAt)}</TableCell>
                 </TableRow>

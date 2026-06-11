@@ -45,6 +45,7 @@ export function TemplateForm({
   );
   const [htmlFileName, setHtmlFileName] = useState("");
   const [htmlFile, setHtmlFile] = useState<File | null>(null);
+  const [assetFiles, setAssetFiles] = useState<File[]>([]);
   const [showPreview, setShowPreview] = useState(false);
   const [templateType, setTemplateType] = useState<"RICH_TEXT" | "HTML">(
     defaultValues?.templateType || "RICH_TEXT"
@@ -82,6 +83,7 @@ export function TemplateForm({
     formData.set("templateType", templateType);
     if (htmlContent) formData.set("htmlContent", htmlContent);
     if (htmlFile) formData.append("htmlFile", htmlFile);
+    assetFiles.forEach((file) => formData.append("assetFiles", file));
 
     const result = defaultValues?.id
       ? await updateTemplate(defaultValues.id, formData)
@@ -221,6 +223,30 @@ export function TemplateForm({
             )}
             {uploading && (
               <p className="text-sm text-muted-foreground">Reading file...</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>Upload Image Assets (optional)</Label>
+            <Input
+              type="file"
+              accept="image/png,image/jpeg,image/jpg,image/gif,image/webp,image/svg+xml"
+              multiple
+              onChange={(e) => {
+                const files = Array.from(e.target.files || []);
+                setAssetFiles(files);
+                setShowPreview(false);
+              }}
+            />
+            <p className="text-xs text-muted-foreground">
+              If your HTML references local images (e.g. assets/logo.png), upload
+              those files here. They will be hosted and linked automatically.
+            </p>
+            {assetFiles.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {assetFiles.length} asset file(s) selected:{" "}
+                {assetFiles.map((f) => f.name).join(", ")}
+              </p>
             )}
           </div>
 

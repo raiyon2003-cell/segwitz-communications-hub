@@ -8,6 +8,7 @@ import { templateSchema } from "@/lib/validators";
 import { parseVariables } from "@/lib/services/variable-parser";
 import { createAuditLog } from "@/lib/services/audit";
 import { uploadFile, STORAGE_BUCKETS } from "@/lib/services/storage";
+import { processHtmlAssetFiles } from "@/lib/services/html-assets";
 import { actionError, actionSuccess } from "@/lib/action-results";
 import { getCachedCategories } from "@/lib/cache";
 import type { TemplateStatus } from "@prisma/client";
@@ -171,6 +172,9 @@ export async function createTemplate(formData: FormData) {
     }
 
     const htmlFile = formData.get("htmlFile") as File | null;
+    const assetFiles = (formData.getAll("assetFiles") as File[]).filter(
+      (f) => f && f.size > 0
+    );
     let htmlContent = (formData.get("htmlContent") as string) || undefined;
     let htmlFileUrl: string | undefined;
 
@@ -183,6 +187,14 @@ export async function createTemplate(formData: FormData) {
         path,
         buffer,
         "text/html"
+      );
+    }
+
+    if (htmlContent && assetFiles.length > 0) {
+      htmlContent = await processHtmlAssetFiles(
+        htmlContent,
+        assetFiles,
+        session.dbUser.id
       );
     }
 
@@ -236,6 +248,9 @@ export async function updateTemplate(id: string, formData: FormData) {
     }
 
     const htmlFile = formData.get("htmlFile") as File | null;
+    const assetFiles = (formData.getAll("assetFiles") as File[]).filter(
+      (f) => f && f.size > 0
+    );
     let htmlContent = (formData.get("htmlContent") as string) || undefined;
     let htmlFileUrl: string | undefined;
 
@@ -248,6 +263,14 @@ export async function updateTemplate(id: string, formData: FormData) {
         path,
         buffer,
         "text/html"
+      );
+    }
+
+    if (htmlContent && assetFiles.length > 0) {
+      htmlContent = await processHtmlAssetFiles(
+        htmlContent,
+        assetFiles,
+        session.dbUser.id
       );
     }
 
