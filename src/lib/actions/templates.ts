@@ -122,6 +122,7 @@ export async function getTemplateForCompose(id: string) {
       subject: true,
       body: true,
       htmlContent: true,
+      htmlFileUrl: true,
       templateType: true,
       variables: true,
       department: { select: { name: true } },
@@ -143,6 +144,7 @@ export async function getTemplateForEdit(id: string) {
       body: true,
       templateType: true,
       htmlContent: true,
+      htmlFileUrl: true,
     },
   });
 }

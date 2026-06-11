@@ -36,6 +36,7 @@ export default async function EditTemplatePage({
           body: template.body,
           templateType: template.templateType,
           htmlContent: template.htmlContent || undefined,
+          htmlFileUrl: template.htmlFileUrl,
         }}
       />
     </div>

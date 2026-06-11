@@ -122,7 +122,10 @@ export default async function TemplateDetailPage({
         </CardHeader>
         <CardContent>
           {template.templateType === "HTML" && template.htmlContent ? (
-            <HtmlEmailPreview html={template.htmlContent} />
+            <HtmlEmailPreview
+              html={template.htmlContent}
+              htmlFileUrl={template.htmlFileUrl}
+            />
           ) : (
             <div className="whitespace-pre-wrap rounded-lg border p-4">
               {template.body}

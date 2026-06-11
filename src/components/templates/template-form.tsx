@@ -29,7 +29,10 @@ type TemplateFormData = z.infer<typeof templateSchema>;
 interface TemplateFormProps {
   departments: (Department & { division: { name: string } })[];
   categories: EmailCategory[];
-  defaultValues?: Partial<TemplateFormData> & { id?: string };
+  defaultValues?: Partial<TemplateFormData> & {
+    id?: string;
+    htmlFileUrl?: string | null;
+  };
 }
 
 export function TemplateForm({
@@ -290,7 +293,12 @@ export function TemplateForm({
                     {showPreview ? "Refresh Preview" : "Show Preview"}
                   </Button>
                 </div>
-                {showPreview && <HtmlEmailPreview html={htmlContent} />}
+                {showPreview && (
+                  <HtmlEmailPreview
+                    html={htmlContent}
+                    htmlFileUrl={defaultValues?.htmlFileUrl}
+                  />
+                )}
               </div>
             </>
           )}

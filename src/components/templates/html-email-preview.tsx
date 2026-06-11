@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   findRelativeAssetPaths,
+  resolveRelativeUrls,
   wrapHtmlForPreview,
 } from "@/lib/services/html-sanitizer";
 import { extractImageSources } from "@/lib/services/html-preview-utils";
@@ -11,6 +12,8 @@ import { AlertTriangle } from "lucide-react";
 interface HtmlEmailPreviewProps {
   html: string;
   className?: string;
+  /** Used to resolve relative asset paths (e.g. assets/logo.png) in preview */
+  htmlFileUrl?: string | null;
 }
 
 type ImageStatus = { src: string; ok: boolean; reason?: string };
@@ -36,14 +39,31 @@ function checkImageInBrowser(src: string): Promise<ImageStatus> {
   });
 }
 
-export function HtmlEmailPreview({ html, className }: HtmlEmailPreviewProps) {
+export function HtmlEmailPreview({
+  html,
+  className,
+  htmlFileUrl,
+}: HtmlEmailPreviewProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeHeight, setIframeHeight] = useState(500);
   const [imageStatuses, setImageStatuses] = useState<ImageStatus[]>([]);
 
-  const srcDoc = useMemo(() => wrapHtmlForPreview(html), [html]);
-  const relativePaths = useMemo(() => findRelativeAssetPaths(html), [html]);
-  const imageSources = useMemo(() => extractImageSources(html), [html]);
+  const resolvedHtml = useMemo(
+    () => resolveRelativeUrls(html, htmlFileUrl),
+    [html, htmlFileUrl]
+  );
+  const srcDoc = useMemo(
+    () => wrapHtmlForPreview(html, htmlFileUrl),
+    [html, htmlFileUrl]
+  );
+  const relativePaths = useMemo(
+    () => findRelativeAssetPaths(resolvedHtml),
+    [resolvedHtml]
+  );
+  const imageSources = useMemo(
+    () => extractImageSources(resolvedHtml),
+    [resolvedHtml]
+  );
 
   useEffect(() => {
     let cancelled = false;

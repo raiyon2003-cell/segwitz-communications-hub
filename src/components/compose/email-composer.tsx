@@ -35,6 +35,7 @@ type LoadedTemplate = {
   subject: string;
   body: string;
   htmlContent: string | null;
+  htmlFileUrl: string | null;
   templateType: string;
   variables: TemplateVariable[];
   department: { name: string };
@@ -324,7 +325,10 @@ export const EmailComposer = memo(function EmailComposer({
               </p>
             </div>
             {selectedTemplate?.templateType === "HTML" ? (
-              <HtmlEmailPreview html={previewBody} />
+              <HtmlEmailPreview
+                html={previewBody}
+                htmlFileUrl={selectedTemplate?.htmlFileUrl}
+              />
             ) : (
               <div className="whitespace-pre-wrap rounded-lg border p-4 text-sm">
                 {previewBody}
