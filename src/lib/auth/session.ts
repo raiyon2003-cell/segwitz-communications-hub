@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
 import { syncAuthUserToDatabase } from "@/lib/auth/sync-user";
+import { getUserByAuthIdViaSupabase } from "@/lib/db/users-via-supabase";
 import type { Role, User } from "@prisma/client";
 import { cache } from "react";
 
@@ -26,24 +27,40 @@ export const getSession = cache(async () => {
 
   if (!authUser) return null;
 
-  let dbUser = await prisma.user.findUnique({
-    where: { authId: authUser.id },
-    include: userInclude,
-  });
+  try {
+    let dbUser = await prisma.user.findUnique({
+      where: { authId: authUser.id },
+      include: userInclude,
+    });
 
-  if (!dbUser && authUser.email) {
-    const synced = await syncAuthUserToDatabase(authUser);
-    if (synced) {
-      dbUser = await prisma.user.findUnique({
-        where: { id: synced.id },
-        include: userInclude,
-      });
+    if (!dbUser && authUser.email) {
+      const synced = await syncAuthUserToDatabase(authUser);
+      if (synced) {
+        dbUser = await prisma.user.findUnique({
+          where: { id: synced.id },
+          include: userInclude,
+        });
+      }
     }
+
+    if (!dbUser || !dbUser.isActive) return null;
+    return { authUser, dbUser: dbUser as SessionUser };
+  } catch (prismaError) {
+    console.error("Prisma session failed, using Supabase REST:", prismaError);
+
+    let dbUser = await getUserByAuthIdViaSupabase(authUser.id);
+
+    if (!dbUser && authUser.email) {
+      dbUser = await syncAuthUserToDatabase(authUser);
+    }
+
+    if (!dbUser || !dbUser.isActive) return null;
+
+    return {
+      authUser,
+      dbUser: { ...dbUser, department: null } as SessionUser,
+    };
   }
-
-  if (!dbUser || !dbUser.isActive) return null;
-
-  return { authUser, dbUser: dbUser as SessionUser };
 });
 
 export async function requireSession() {

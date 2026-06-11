@@ -46,7 +46,7 @@ export async function signInWithEmail(
       return {
         success: false as const,
         error:
-          "Unable to connect to the database. Check that DATABASE_URL is set correctly on Vercel.",
+          "Unable to connect to the database. Add DATABASE_URL to Vercel (copy from .env.local) then redeploy.",
       };
     }
 

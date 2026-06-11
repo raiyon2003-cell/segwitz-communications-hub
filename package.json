@@ -12,6 +12,8 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
+    "vercel:env": "node scripts/sync-vercel-env.mjs",
+    "vercel:deploy": "npx vercel --prod",
     "postinstall": "prisma generate"
   },
   "dependencies": {
