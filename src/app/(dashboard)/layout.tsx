@@ -3,6 +3,8 @@ import { getSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -12,7 +14,15 @@ export default async function DashboardLayout({
 
   if (!session) {
     const supabase = await createClient();
-    await supabase.auth.signOut();
+    const {
+      data: { user: authUser },
+    } = await supabase.auth.getUser();
+
+    if (authUser) {
+      // Supabase session is valid but no DB user — don't sign out (that causes a loop).
+      redirect("/login?error=account_not_configured");
+    }
+
     redirect("/login");
   }
 

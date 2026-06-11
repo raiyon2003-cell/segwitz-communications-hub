@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createClient } from "@/lib/supabase/client";
+import { signInWithEmail } from "@/lib/actions/auth";
 import { loginSchema } from "@/lib/validators";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +16,16 @@ import { z } from "zod";
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
+
+  const authError = searchParams.get("error");
+  const errorMessage =
+    authError === "account_not_configured"
+      ? "Your account is not set up in the system. Contact an administrator."
+      : authError === "auth"
+        ? "Authentication failed. Please try again."
+        : null;
 
   const {
     register,
@@ -30,25 +37,24 @@ export function LoginForm() {
 
   async function onSubmit(data: LoginFormData) {
     setLoading(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
-      email: data.email,
-      password: data.password,
-    });
-
-    if (error) {
-      toast.error(error.message);
-      setLoading(false);
-      return;
-    }
-
     const redirect = searchParams.get("redirect") || "/dashboard";
-    router.push(redirect);
-    router.refresh();
+
+    const result = await signInWithEmail(data.email, data.password, redirect);
+
+    if (result && !result.success) {
+      toast.error(result.error);
+      setLoading(false);
+    }
+    // On success, server action redirects — no further client code runs.
   }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      {errorMessage && (
+        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {errorMessage}
+        </p>
+      )}
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
         <Input

@@ -11,6 +11,12 @@ export interface SessionUser extends User {
   } | null;
 }
 
+const userInclude = {
+  department: {
+    include: { division: true },
+  },
+} as const;
+
 export const getSession = cache(async () => {
   try {
     const supabase = await createClient();
@@ -20,14 +26,26 @@ export const getSession = cache(async () => {
 
     if (!authUser) return null;
 
-    const dbUser = await prisma.user.findUnique({
+    let dbUser = await prisma.user.findUnique({
       where: { authId: authUser.id },
-      include: {
-        department: {
-          include: { division: true },
-        },
-      },
+      include: userInclude,
     });
+
+    // Fallback: match by email and repair stale authId links after auth resets.
+    if (!dbUser && authUser.email) {
+      const byEmail = await prisma.user.findUnique({
+        where: { email: authUser.email },
+        include: userInclude,
+      });
+
+      if (byEmail) {
+        dbUser = await prisma.user.update({
+          where: { id: byEmail.id },
+          data: { authId: authUser.id },
+          include: userInclude,
+        });
+      }
+    }
 
     if (!dbUser || !dbUser.isActive) return null;
 

@@ -149,7 +149,7 @@ async function main() {
       role: "ADMIN",
       departmentId: pmDept?.id,
     },
-    update: { role: "ADMIN" },
+    update: { role: "ADMIN", authId: authId! },
   });
 
   console.log(`Admin user ready: ${adminEmail}`);
