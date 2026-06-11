@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TemplateActions } from "@/components/templates/template-actions";
+import { TemplateDeleteButton } from "@/components/templates/template-delete-button";
 import { hasPermission } from "@/lib/permissions";
 import { formatDateTime } from "@/lib/utils";
 import { HtmlEmailPreview } from "@/components/templates/html-email-preview";
@@ -24,6 +25,7 @@ export default async function TemplateDetailPage({
   if (!template) notFound();
 
   const canEdit = hasPermission(session!.dbUser.role, "templates.edit");
+  const canDelete = hasPermission(session!.dbUser.role, "templates.delete");
 
   return (
     <div className="space-y-6">
@@ -41,6 +43,12 @@ export default async function TemplateDetailPage({
             <Button variant="outline" asChild>
               <Link href={`/templates/${id}/edit`}>Edit</Link>
             </Button>
+          )}
+          {canDelete && (
+            <TemplateDeleteButton
+              templateId={id}
+              templateName={template.name}
+            />
           )}
         </div>
       </div>

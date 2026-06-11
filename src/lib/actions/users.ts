@@ -106,6 +106,10 @@ export async function deleteUser(id: string) {
       throw new Error("Forbidden");
     }
 
+    if (session.dbUser.id === id) {
+      throw new Error("You cannot delete your own account");
+    }
+
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) throw new Error("User not found");
 

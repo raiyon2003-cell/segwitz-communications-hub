@@ -128,7 +128,13 @@ export async function deleteContact(id: string) {
       throw new Error("Forbidden");
     }
 
-    await prisma.contact.delete({ where: { id } });
+    await prisma.$transaction([
+      prisma.sentEmail.updateMany({
+        where: { contactId: id },
+        data: { contactId: null },
+      }),
+      prisma.contact.delete({ where: { id } }),
+    ]);
 
     await createAuditLog({
       userId: session.dbUser.id,

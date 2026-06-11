@@ -12,6 +12,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { UserFormDialog } from "@/components/users/user-form-dialog";
+import { TableRowActions } from "@/components/shared/table-row-actions";
+import { deleteUser } from "@/lib/actions/users";
 import { Plus } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/permissions";
 import type { Department, Role, User } from "@prisma/client";
@@ -65,7 +67,7 @@ export function UsersTable({ users, departments }: UsersTableProps) {
               <TableHead>Role</TableHead>
               <TableHead>Department</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead></TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -89,13 +91,14 @@ export function UsersTable({ users, departments }: UsersTableProps) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => openEdit(user)}
-                  >
-                    Edit
-                  </Button>
+                  <TableRowActions
+                    itemName={`${user.firstName} ${user.lastName}`}
+                    onEdit={() => openEdit(user)}
+                    onDelete={() => deleteUser(user.id)}
+                    canView={false}
+                    deleteSuccessMessage="User deleted"
+                    deleteDescription={`"${user.firstName} ${user.lastName}" will be permanently removed from the system.`}
+                  />
                 </TableCell>
               </TableRow>
             ))}

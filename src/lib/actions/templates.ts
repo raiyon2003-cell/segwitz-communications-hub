@@ -360,6 +360,46 @@ export async function approveTemplate(id: string, comments?: string) {
   }
 }
 
+export async function deleteTemplate(id: string) {
+  try {
+    const session = await requireSession();
+    if (!hasPermission(session.dbUser.role, "templates.delete")) {
+      throw new Error("Forbidden");
+    }
+
+    const template = await prisma.emailTemplate.findUnique({
+      where: { id },
+      select: { name: true },
+    });
+    if (!template) throw new Error("Template not found");
+
+    await prisma.$transaction([
+      prisma.sentEmail.updateMany({
+        where: { templateId: id },
+        data: { templateId: null },
+      }),
+      prisma.communicationTimeline.updateMany({
+        where: { templateId: id },
+        data: { templateId: null },
+      }),
+      prisma.emailTemplate.delete({ where: { id } }),
+    ]);
+
+    await createAuditLog({
+      userId: session.dbUser.id,
+      action: "DELETE",
+      entityType: "email_template",
+      entityId: id,
+      details: `Deleted template: ${template.name}`,
+    });
+
+    revalidatePath("/templates");
+    return actionSuccess(undefined);
+  } catch (error) {
+    return actionError(error);
+  }
+}
+
 export async function archiveTemplate(id: string) {
   try {
     const session = await requireSession();

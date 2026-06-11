@@ -20,7 +20,11 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus } from "lucide-react";
+import {
+  DivisionActions,
+  DepartmentActions,
+} from "@/components/departments/division-department-actions";
 import type { Division, Department } from "@prisma/client";
 
 type DivisionWithDepts = Division & { departments: Department[] };
@@ -118,21 +122,10 @@ export function DivisionManager({ divisions }: DivisionManagerProps) {
           <Card key={division.id}>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">{division.name}</CardTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={async () => {
-                  const result = await deleteDivision(division.id);
-                  if (result.success) {
-                    toast.success("Division deleted");
-                    router.refresh();
-                  } else {
-                    toast.error(result.error);
-                  }
-                }}
-              >
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
+              <DivisionActions
+                divisionId={division.id}
+                divisionName={division.name}
+              />
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
@@ -142,22 +135,11 @@ export function DivisionManager({ divisions }: DivisionManagerProps) {
                     className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm"
                   >
                     {dept.name}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      onClick={async () => {
-                        const result = await deleteDepartment(dept.id);
-                        if (result.success) {
-                          toast.success("Department deleted");
-                          router.refresh();
-                        } else {
-                          toast.error(result.error);
-                        }
-                      }}
-                    >
-                      <Trash2 className="h-3 w-3 text-destructive" />
-                    </Button>
+                    <DepartmentActions
+                      departmentId={dept.id}
+                      departmentName={dept.name}
+                      divisionId={division.id}
+                    />
                   </li>
                 ))}
               </ul>

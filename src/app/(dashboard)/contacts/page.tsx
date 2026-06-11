@@ -1,15 +1,7 @@
 import Link from "next/link";
 import { getContacts } from "@/lib/actions/contacts";
+import { ContactsTable } from "@/components/contacts/contacts-table";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { Plus } from "lucide-react";
 
 export default async function ContactsPage() {
@@ -30,44 +22,7 @@ export default async function ContactsPage() {
         </Button>
       </div>
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Company</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Type</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {contacts.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
-                  No contacts found
-                </TableCell>
-              </TableRow>
-            ) : (
-              contacts.map((c) => (
-                <TableRow key={c.id}>
-                  <TableCell className="font-medium">{c.name}</TableCell>
-                  <TableCell>{c.company || "—"}</TableCell>
-                  <TableCell>{c.email}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{c.contactType}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm" asChild>
-                      <Link href={`/contacts/${c.id}/edit`}>Edit</Link>
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <ContactsTable contacts={contacts} />
     </div>
   );
 }
