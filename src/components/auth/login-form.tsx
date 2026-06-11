@@ -23,9 +23,11 @@ export function LoginForm() {
   const errorMessage =
     authError === "account_not_configured"
       ? "Your account is not set up in the system. Contact an administrator."
-      : authError === "auth"
-        ? "Authentication failed. Please try again."
-        : null;
+      : authError === "database_error"
+        ? "Unable to connect to the database. Verify DATABASE_URL is set on Vercel (same as your local .env.local)."
+        : authError === "auth"
+          ? "Authentication failed. Please try again."
+          : null;
 
   const {
     register,

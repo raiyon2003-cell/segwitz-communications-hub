@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
+import { syncAuthUserToDatabase } from "@/lib/auth/sync-user";
+import { prisma } from "@/lib/prisma";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +12,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const session = await getSession();
+  let session = await getSession();
 
   if (!session) {
     const supabase = await createClient();
@@ -19,11 +21,30 @@ export default async function DashboardLayout({
     } = await supabase.auth.getUser();
 
     if (authUser) {
-      // Supabase session is valid but no DB user — don't sign out (that causes a loop).
-      redirect("/login?error=account_not_configured");
-    }
+      try {
+        const synced = await syncAuthUserToDatabase(authUser);
+        if (synced?.isActive) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: synced.id },
+            include: {
+              department: { include: { division: true } },
+            },
+          });
+          if (dbUser) {
+            session = { authUser, dbUser };
+          }
+        }
+      } catch (error) {
+        console.error("Dashboard DB error:", error);
+        redirect("/login?error=database_error");
+      }
 
-    redirect("/login");
+      if (!session) {
+        redirect("/login?error=account_not_configured");
+      }
+    } else {
+      redirect("/login");
+    }
   }
 
   return (

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { createClient } from "@/lib/supabase/server";
+import { syncAuthUserToDatabase } from "@/lib/auth/sync-user";
 import type { Role, User } from "@prisma/client";
 import { cache } from "react";
 
@@ -18,42 +19,31 @@ const userInclude = {
 } as const;
 
 export const getSession = cache(async () => {
-  try {
-    const supabase = await createClient();
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser();
+  const supabase = await createClient();
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
 
-    if (!authUser) return null;
+  if (!authUser) return null;
 
-    let dbUser = await prisma.user.findUnique({
-      where: { authId: authUser.id },
-      include: userInclude,
-    });
+  let dbUser = await prisma.user.findUnique({
+    where: { authId: authUser.id },
+    include: userInclude,
+  });
 
-    // Fallback: match by email and repair stale authId links after auth resets.
-    if (!dbUser && authUser.email) {
-      const byEmail = await prisma.user.findUnique({
-        where: { email: authUser.email },
+  if (!dbUser && authUser.email) {
+    const synced = await syncAuthUserToDatabase(authUser);
+    if (synced) {
+      dbUser = await prisma.user.findUnique({
+        where: { id: synced.id },
         include: userInclude,
       });
-
-      if (byEmail) {
-        dbUser = await prisma.user.update({
-          where: { id: byEmail.id },
-          data: { authId: authUser.id },
-          include: userInclude,
-        });
-      }
     }
-
-    if (!dbUser || !dbUser.isActive) return null;
-
-    return { authUser, dbUser: dbUser as SessionUser };
-  } catch (error) {
-    console.error("Session error:", error);
-    return null;
   }
+
+  if (!dbUser || !dbUser.isActive) return null;
+
+  return { authUser, dbUser: dbUser as SessionUser };
 });
 
 export async function requireSession() {
