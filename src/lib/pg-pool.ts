@@ -8,7 +8,7 @@ function buildPoolConfig() {
     throw new Error("DATABASE_URL is not set");
   }
 
-  const isSupabase = connectionString.includes("supabase.co");
+  const isSupabase = connectionString.includes("supabase");
   const isVercel = !!process.env.VERCEL;
 
   // Keep query params (e.g. sslmode=require) for non-Supabase URLs.
