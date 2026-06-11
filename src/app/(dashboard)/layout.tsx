@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth/session";
+import { createClient } from "@/lib/supabase/server";
 import { DashboardShell } from "@/components/layout/dashboard-shell";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +11,12 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   const session = await getSession();
-  if (!session) redirect("/login");
+
+  if (!session) {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+    redirect("/login");
+  }
 
   return (
     <DashboardShell

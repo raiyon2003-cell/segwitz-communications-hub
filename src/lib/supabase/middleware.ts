@@ -48,11 +48,8 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    if (user && isAuthRoute) {
-      const url = request.nextUrl.clone();
-      url.pathname = "/dashboard";
-      return NextResponse.redirect(url);
-    }
+    // Do NOT redirect authenticated users away from /login here.
+    // That caused a redirect loop when the DB session was invalid.
   } catch (error) {
     console.error("Middleware auth error:", error);
   }
