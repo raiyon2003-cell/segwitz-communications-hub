@@ -13,7 +13,11 @@ import {
   Settings,
   UserCircle,
   Send,
+  LogOut,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Role } from "@prisma/client";
 import { hasPermission } from "@/lib/permissions";
@@ -36,13 +40,21 @@ interface SidebarProps {
 
 export function Sidebar({ role }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
 
   const visibleItems = navItems.filter((item) =>
     hasPermission(role, item.permission)
   );
 
+  async function handleLogout() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
   return (
-    <aside className="hidden w-64 flex-col border-r bg-card lg:flex">
+    <aside className="flex h-full w-64 flex-col border-r bg-card">
       <div className="flex h-16 items-center border-b px-6">
         <Mail className="h-6 w-6 text-primary" />
         <div className="ml-3">
@@ -72,6 +84,16 @@ export function Sidebar({ role }: SidebarProps) {
           );
         })}
       </nav>
+      <div className="border-t p-4">
+        <Button
+          variant="outline"
+          className="w-full justify-start"
+          onClick={handleLogout}
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Logout
+        </Button>
+      </div>
     </aside>
   );
 }
