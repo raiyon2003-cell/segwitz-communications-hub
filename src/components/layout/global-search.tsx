@@ -91,7 +91,7 @@ export function GlobalSearch() {
       </div>
 
       {open && query.trim().length >= 2 && (
-        <div className="absolute top-full z-50 mt-1 w-full rounded-lg border bg-popover shadow-lg">
+        <div className="brand-card-elevated absolute top-full z-50 mt-1 w-full rounded-lg border border-border bg-popover shadow-lg">
           {loading && results.length === 0 ? (
             <p className="px-4 py-3 text-sm text-muted-foreground">
               Searching...

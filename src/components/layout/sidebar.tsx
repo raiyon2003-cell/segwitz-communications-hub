@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   FileText,
   Users,
-  Mail,
   History,
   GitBranch,
   Building2,
@@ -18,6 +17,7 @@ import {
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { BrandLogo } from "@/components/brand/brand-logo";
 import { cn } from "@/lib/utils";
 import type { Role } from "@prisma/client";
 import { hasPermission } from "@/lib/permissions";
@@ -54,15 +54,11 @@ export function Sidebar({ role }: SidebarProps) {
   }
 
   return (
-    <aside className="flex h-full w-64 flex-col border-r bg-card">
-      <div className="flex h-16 items-center border-b px-6">
-        <Mail className="h-6 w-6 text-primary" />
-        <div className="ml-3">
-          <p className="text-sm font-bold">SegWitz</p>
-          <p className="text-xs text-muted-foreground">Communications Hub</p>
-        </div>
+    <aside className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+      <div className="flex h-16 items-center border-b border-sidebar-border px-5">
+        <BrandLogo variant="light" size="sm" />
       </div>
-      <nav className="flex-1 space-y-1 p-4">
+      <nav className="flex-1 space-y-1 p-3">
         {visibleItems.map((item) => {
           const Icon = item.icon;
           const isActive =
@@ -72,22 +68,22 @@ export function Sidebar({ role }: SidebarProps) {
               key={item.href}
               href={item.href}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
                 isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                  : "text-sidebar-muted hover:bg-white/10 hover:text-sidebar-foreground"
               )}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-4 w-4 shrink-0" />
               {item.label}
             </Link>
           );
         })}
       </nav>
-      <div className="border-t p-4">
+      <div className="border-t border-sidebar-border p-3">
         <Button
           variant="outline"
-          className="w-full justify-start"
+          className="w-full justify-start border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-white/10 hover:text-sidebar-foreground"
           onClick={handleLogout}
         >
           <LogOut className="mr-2 h-4 w-4" />

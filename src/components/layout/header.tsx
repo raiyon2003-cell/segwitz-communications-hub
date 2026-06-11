@@ -44,19 +44,16 @@ export function Header({ user, onMenuClick }: HeaderProps) {
   }
 
   return (
-    <header className="flex h-16 items-center gap-3 border-b bg-card px-4 lg:gap-4 lg:px-6">
+    <header className="flex h-16 items-center gap-3 border-b border-border bg-card px-4 shadow-sm lg:gap-4 lg:px-6">
       <div className="flex shrink-0 items-center gap-2">
         <Button
           variant="ghost"
           size="icon"
-          className="lg:hidden"
+          className="text-foreground lg:hidden"
           onClick={onMenuClick}
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <div className="lg:hidden">
-          <p className="text-sm font-bold">SegWitz SCH</p>
-        </div>
       </div>
 
       <div className="flex flex-1 justify-center">
@@ -67,6 +64,7 @@ export function Header({ user, onMenuClick }: HeaderProps) {
         <Button
           variant="ghost"
           size="icon"
+          className="text-muted-foreground hover:text-foreground"
           onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
         >
           <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -78,7 +76,7 @@ export function Header({ user, onMenuClick }: HeaderProps) {
           size="sm"
           onClick={handleLogout}
           disabled={loggingOut}
-          className="hidden sm:inline-flex"
+          className="hidden border-border sm:inline-flex"
         >
           <LogOut className="mr-2 h-4 w-4" />
           {loggingOut ? "Logging out..." : "Logout"}
@@ -89,7 +87,7 @@ export function Header({ user, onMenuClick }: HeaderProps) {
           size="icon"
           onClick={handleLogout}
           disabled={loggingOut}
-          className="sm:hidden"
+          className="border-border sm:hidden"
           aria-label="Logout"
         >
           <LogOut className="h-4 w-4" />
@@ -98,8 +96,8 @@ export function Header({ user, onMenuClick }: HeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
-              <Avatar className="h-10 w-10">
-                <AvatarFallback>
+              <Avatar className="h-10 w-10 border border-border">
+                <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                   {getInitials(user.firstName, user.lastName)}
                 </AvatarFallback>
               </Avatar>
@@ -107,7 +105,7 @@ export function Header({ user, onMenuClick }: HeaderProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <div className="px-2 py-1.5">
-              <p className="text-sm font-medium">
+              <p className="text-sm font-semibold">
                 {user.firstName} {user.lastName}
               </p>
               <p className="text-xs text-muted-foreground">{user.email}</p>

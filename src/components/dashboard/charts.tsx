@@ -13,8 +13,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-
-const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+import { CHART_COLORS } from "@/lib/brand";
 
 interface ChartsProps {
   mostUsedTemplates: Array<{ name: string; count: number }>;
@@ -27,20 +26,38 @@ export const DashboardCharts = memo(function DashboardCharts({
 }: ChartsProps) {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <div className="rounded-lg border bg-card p-4">
-        <h3 className="mb-4 text-sm font-medium">Most Used Templates</h3>
+      <div className="brand-card-elevated rounded-lg border border-border bg-card p-4">
+        <h3 className="mb-4 text-sm font-semibold text-foreground">
+          Most Used Templates
+        </h3>
         <ResponsiveContainer width="100%" height={250}>
           <BarChart data={mostUsedTemplates}>
-            <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-            <YAxis />
-            <Tooltip />
-            <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <XAxis
+              dataKey="name"
+              tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+            />
+            <YAxis tick={{ fill: "var(--muted-foreground)" }} />
+            <Tooltip
+              contentStyle={{
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius)",
+                color: "var(--foreground)",
+              }}
+            />
+            <Bar
+              dataKey="count"
+              fill={CHART_COLORS[0]}
+              radius={[4, 4, 0, 0]}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>
-      <div className="rounded-lg border bg-card p-4">
-        <h3 className="mb-4 text-sm font-medium">Emails by Department</h3>
+      <div className="brand-card-elevated rounded-lg border border-border bg-card p-4">
+        <h3 className="mb-4 text-sm font-semibold text-foreground">
+          Emails by Department
+        </h3>
         <ResponsiveContainer width="100%" height={250}>
           <PieChart>
             <Pie
@@ -57,11 +74,18 @@ export const DashboardCharts = memo(function DashboardCharts({
               {emailsByDepartment.map((_, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={COLORS[index % COLORS.length]}
+                  fill={CHART_COLORS[index % CHART_COLORS.length]}
                 />
               ))}
             </Pie>
-            <Tooltip />
+            <Tooltip
+              contentStyle={{
+                background: "var(--card)",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius)",
+                color: "var(--foreground)",
+              }}
+            />
           </PieChart>
         </ResponsiveContainer>
       </div>

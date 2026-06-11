@@ -29,7 +29,7 @@ export default async function DashboardPage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+        <Card className="brand-card-elevated">
           <CardHeader>
             <CardTitle className="text-base">Recent Sends</CardTitle>
           </CardHeader>
@@ -57,7 +57,7 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="brand-card-elevated">
           <CardHeader>
             <CardTitle className="text-base">Recent Failures</CardTitle>
           </CardHeader>

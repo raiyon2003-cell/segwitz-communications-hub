@@ -39,7 +39,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <Card>
+    <Card className="brand-card-elevated border-border/80">
       <CardHeader>
         <CardTitle>Reset Password</CardTitle>
         <CardDescription>
@@ -69,7 +69,7 @@ export default function ForgotPasswordPage() {
           </form>
         )}
         <div className="mt-4 text-center text-sm">
-          <Link href="/login" className="text-primary hover:underline">
+          <Link href="/login" className="text-accent hover:underline">
             Back to login
           </Link>
         </div>

@@ -17,19 +17,22 @@ export function StatsCards({
       title: "Emails Sent Today",
       value: emailsSentToday,
       icon: Mail,
-      color: "text-blue-600",
+      iconClass: "text-brand-steel-teal",
+      accentClass: "border-l-brand-steel-teal",
     },
     {
       title: "Failed Today",
       value: failedToday,
       icon: AlertTriangle,
-      color: "text-red-600",
+      iconClass: "text-destructive",
+      accentClass: "border-l-destructive",
     },
     {
       title: "Sent This Month",
       value: emailsSentMonth,
       icon: Calendar,
-      color: "text-emerald-600",
+      iconClass: "text-brand-lime",
+      accentClass: "border-l-brand-lime",
     },
   ];
 
@@ -38,13 +41,20 @@ export function StatsCards({
       {stats.map((stat) => {
         const Icon = stat.icon;
         return (
-          <Card key={stat.title}>
+          <Card
+            key={stat.title}
+            className={`brand-card-elevated border-l-4 ${stat.accentClass}`}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <Icon className={`h-4 w-4 ${stat.color}`} />
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {stat.title}
+              </CardTitle>
+              <Icon className={`h-4 w-4 ${stat.iconClass}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              <div className="text-2xl font-semibold text-foreground">
+                {stat.value}
+              </div>
             </CardContent>
           </Card>
         );

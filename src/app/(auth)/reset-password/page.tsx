@@ -47,7 +47,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <Card>
+    <Card className="brand-card-elevated border-border/80">
       <CardHeader>
         <CardTitle>Set New Password</CardTitle>
         <CardDescription>Enter your new password below</CardDescription>

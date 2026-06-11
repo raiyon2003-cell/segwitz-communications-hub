@@ -8,17 +8,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Mail } from "lucide-react";
 
 export default function LoginPage() {
   return (
-    <Card>
+    <Card className="brand-card-elevated border-border/80">
       <CardHeader className="text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-          <Mail className="h-6 w-6 text-primary" />
-        </div>
-        <CardTitle>SegWitz Communications Hub</CardTitle>
-        <CardDescription>Sign in to your account</CardDescription>
+        <CardTitle className="text-xl">Welcome back</CardTitle>
+        <CardDescription>Sign in to your SegWitz Communications Hub account</CardDescription>
       </CardHeader>
       <CardContent>
         <Suspense fallback={<Skeleton className="h-48 w-full" />}>
