@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getContact } from "@/lib/actions/contacts";
+import { getContactForEdit } from "@/lib/actions/contacts";
 import { ContactForm } from "@/components/contacts/contact-form";
 
 export default async function EditContactPage({
@@ -8,7 +8,7 @@ export default async function EditContactPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const contact = await getContact(id);
+  const contact = await getContactForEdit(id);
   if (!contact) notFound();
 
   return (

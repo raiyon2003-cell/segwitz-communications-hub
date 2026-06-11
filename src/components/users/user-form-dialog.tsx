@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -32,7 +32,9 @@ type UserFormData = z.infer<typeof userSchema>;
 interface UserFormDialogProps {
   departments: (Department & { division: { name: string } })[];
   user?: User;
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const ROLES: Role[] = [
@@ -46,9 +48,13 @@ export function UserFormDialog({
   departments,
   user,
   trigger,
+  open: controlledOpen,
+  onOpenChange,
 }: UserFormDialogProps) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [loading, setLoading] = useState(false);
 
   const {
@@ -56,19 +62,27 @@ export function UserFormDialog({
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<UserFormData>({
     resolver: zodResolver(userSchema),
-    defaultValues: user
-      ? {
-          email: user.email,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          role: user.role,
-          departmentId: user.departmentId,
-        }
-      : { role: "STAFF" },
+    defaultValues: { role: "STAFF" },
   });
+
+  useEffect(() => {
+    if (!open) return;
+    if (user) {
+      reset({
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        role: user.role,
+        departmentId: user.departmentId,
+      });
+    } else {
+      reset({ role: "STAFF" });
+    }
+  }, [open, user, reset]);
 
   async function onSubmit(data: UserFormData) {
     setLoading(true);
@@ -88,7 +102,7 @@ export function UserFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{user ? "Edit User" : "Create User"}</DialogTitle>

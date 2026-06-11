@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getEmailHistory } from "@/lib/actions/emails";
+import { getEmailHistoryForExport } from "@/lib/actions/emails";
 import { getSession } from "@/lib/auth/session";
 import * as XLSX from "xlsx";
 
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
   }
 
   const format = request.nextUrl.searchParams.get("format") || "csv";
-  const { emails } = await getEmailHistory({ pageSize: 10000 });
+  const emails = await getEmailHistoryForExport();
 
   const rows = emails.map((e) => ({
     Recipient: e.recipient,

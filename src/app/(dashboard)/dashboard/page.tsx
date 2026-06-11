@@ -1,6 +1,6 @@
 import { getDashboardStats } from "@/lib/actions/dashboard";
 import { StatsCards } from "@/components/dashboard/stats-cards";
-import { DashboardCharts } from "@/components/dashboard/charts";
+import { DashboardChartsLazy } from "@/components/dashboard/dashboard-charts-lazy";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/utils";
@@ -23,7 +23,7 @@ export default async function DashboardPage() {
         emailsSentMonth={stats.emailsSentMonth}
       />
 
-      <DashboardCharts
+      <DashboardChartsLazy
         mostUsedTemplates={stats.mostUsedTemplates}
         emailsByDepartment={stats.emailsByDepartment}
       />

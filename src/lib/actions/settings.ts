@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { clearBrevoConfigCache } from "@/lib/services/brevo";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
@@ -15,7 +16,21 @@ export async function getSettings() {
     throw new Error("Forbidden");
   }
 
-  const settings = await prisma.setting.findMany();
+  const settings = await prisma.setting.findMany({
+    where: {
+      key: {
+        in: [
+          "company_name",
+          "company_logo",
+          "brevo_sender_name",
+          "brevo_sender_email",
+          "brevo_reply_to_email",
+          "brevo_api_key",
+        ],
+      },
+    },
+    select: { key: true, value: true },
+  });
   const map = Object.fromEntries(settings.map((s) => [s.key, s]));
 
   return {
@@ -68,6 +83,7 @@ export async function updateSettings(input: unknown) {
       details: "Updated application settings",
     });
 
+    clearBrevoConfigCache();
     revalidatePath("/settings");
     return actionSuccess(undefined);
   } catch (error) {

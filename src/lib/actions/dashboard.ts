@@ -1,20 +1,29 @@
 "use server";
 
+import { unstable_cache } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth/session";
 import { startOfDay, startOfMonth, endOfDay } from "date-fns";
+import type { Role } from "@prisma/client";
 
-export async function getDashboardStats() {
-  const session = await requireSession();
+const recentEmailSelect = {
+  id: true,
+  recipient: true,
+  subject: true,
+  errorMessage: true,
+  sentAt: true,
+  template: { select: { name: true } },
+  sentBy: { select: { firstName: true, lastName: true } },
+} as const;
+
+async function fetchDashboardStats(userId: string, role: Role) {
   const today = new Date();
   const todayStart = startOfDay(today);
   const todayEnd = endOfDay(today);
   const monthStart = startOfMonth(today);
 
   const baseWhere =
-    session.dbUser.role === "STAFF" || session.dbUser.role === "VIEW_ONLY"
-      ? { sentById: session.dbUser.id }
-      : {};
+    role === "STAFF" || role === "VIEW_ONLY" ? { sentById: userId } : {};
 
   const [
     emailsSentToday,
@@ -48,19 +57,13 @@ export async function getDashboardStats() {
     }),
     prisma.sentEmail.findMany({
       where: { ...baseWhere, status: "SENT" },
-      include: {
-        template: { select: { name: true } },
-        sentBy: { select: { firstName: true, lastName: true } },
-      },
+      select: recentEmailSelect,
       orderBy: { sentAt: "desc" },
       take: 5,
     }),
     prisma.sentEmail.findMany({
       where: { ...baseWhere, status: "FAILED" },
-      include: {
-        template: { select: { name: true } },
-        sentBy: { select: { firstName: true, lastName: true } },
-      },
+      select: recentEmailSelect,
       orderBy: { sentAt: "desc" },
       take: 5,
     }),
@@ -75,25 +78,34 @@ export async function getDashboardStats() {
       by: ["departmentId"],
       where: { ...baseWhere, status: "SENT", departmentId: { not: null } },
       _count: { departmentId: true },
+      orderBy: { _count: { departmentId: "desc" } },
+      take: 10,
     }),
   ]);
 
   const templateIds = mostUsedTemplates
     .map((t) => t.templateId)
     .filter(Boolean) as string[];
-  const templates = await prisma.emailTemplate.findMany({
-    where: { id: { in: templateIds } },
-    select: { id: true, name: true },
-  });
-  const templateMap = Object.fromEntries(templates.map((t) => [t.id, t.name]));
-
   const departmentIds = emailsByDepartment
     .map((d) => d.departmentId)
     .filter(Boolean) as string[];
-  const departments = await prisma.department.findMany({
-    where: { id: { in: departmentIds } },
-    select: { id: true, name: true },
-  });
+
+  const [templates, departments] = await Promise.all([
+    templateIds.length > 0
+      ? prisma.emailTemplate.findMany({
+          where: { id: { in: templateIds } },
+          select: { id: true, name: true },
+        })
+      : Promise.resolve([]),
+    departmentIds.length > 0
+      ? prisma.department.findMany({
+          where: { id: { in: departmentIds } },
+          select: { id: true, name: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const templateMap = Object.fromEntries(templates.map((t) => [t.id, t.name]));
   const deptMap = Object.fromEntries(departments.map((d) => [d.id, d.name]));
 
   return {
@@ -111,4 +123,15 @@ export async function getDashboardStats() {
       count: d._count.departmentId,
     })),
   };
+}
+
+const getCachedDashboardStats = unstable_cache(
+  fetchDashboardStats,
+  ["dashboard-stats"],
+  { revalidate: 60, tags: ["dashboard"] }
+);
+
+export async function getDashboardStats() {
+  const session = await requireSession();
+  return getCachedDashboardStats(session.dbUser.id, session.dbUser.role);
 }

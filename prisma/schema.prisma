@@ -157,6 +157,8 @@ model EmailTemplate {
   @@index([categoryId])
   @@index([status])
   @@index([ownerId])
+  @@index([departmentId, status])
+  @@index([status, updatedAt])
   @@map("email_templates")
 }
 
@@ -206,6 +208,9 @@ model SentEmail {
   @@index([sentById])
   @@index([status])
   @@index([sentAt])
+  @@index([status, sentAt])
+  @@index([sentById, status, sentAt])
+  @@index([departmentId, sentAt])
   @@map("sent_emails")
 }
 
@@ -279,6 +284,7 @@ model CommunicationTimeline {
 
   @@index([contactId])
   @@index([occurredAt])
+  @@index([contactId, occurredAt])
   @@map("communication_timelines")
 }
 

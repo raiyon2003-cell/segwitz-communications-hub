@@ -9,7 +9,34 @@ import { parseVariables } from "@/lib/services/variable-parser";
 import { createAuditLog } from "@/lib/services/audit";
 import { uploadFile, STORAGE_BUCKETS } from "@/lib/services/storage";
 import { actionError, actionSuccess } from "@/lib/action-results";
+import { getCachedCategories } from "@/lib/cache";
 import type { TemplateStatus } from "@prisma/client";
+
+const templateListSelect = {
+  id: true,
+  name: true,
+  subject: true,
+  departmentId: true,
+  categoryId: true,
+  templateType: true,
+  status: true,
+  ownerId: true,
+  htmlFileUrl: true,
+  createdAt: true,
+  updatedAt: true,
+  department: { include: { division: true } },
+  category: true,
+  owner: { select: { firstName: true, lastName: true } },
+  variables: {
+    select: {
+      id: true,
+      variableName: true,
+      label: true,
+      isRequired: true,
+    },
+  },
+  _count: { select: { sentEmails: true } },
+} as const;
 
 export async function getTemplates(filters?: {
   status?: TemplateStatus;
@@ -47,13 +74,7 @@ export async function getTemplates(filters?: {
   const [templates, total] = await Promise.all([
     prisma.emailTemplate.findMany({
       where,
-      include: {
-        department: { include: { division: true } },
-        category: true,
-        owner: { select: { firstName: true, lastName: true } },
-        variables: true,
-        _count: { select: { sentEmails: true } },
-      },
+      select: templateListSelect,
       orderBy: { updatedAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -62,6 +83,67 @@ export async function getTemplates(filters?: {
   ]);
 
   return { templates, total, page, pageSize };
+}
+
+export async function getApprovedTemplateSummaries() {
+  const session = await requireSession();
+
+  const where: Record<string, unknown> = { status: "APPROVED" };
+
+  if (
+    session.dbUser.role === "DEPARTMENT_MANAGER" &&
+    session.dbUser.departmentId
+  ) {
+    where.departmentId = session.dbUser.departmentId;
+  }
+
+  return prisma.emailTemplate.findMany({
+    where,
+    select: {
+      id: true,
+      name: true,
+      subject: true,
+      templateType: true,
+      department: { select: { name: true } },
+    },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function getTemplateForCompose(id: string) {
+  await requireSession();
+
+  return prisma.emailTemplate.findFirst({
+    where: { id, status: "APPROVED" },
+    select: {
+      id: true,
+      name: true,
+      subject: true,
+      body: true,
+      htmlContent: true,
+      templateType: true,
+      variables: true,
+      department: { select: { name: true } },
+    },
+  });
+}
+
+export async function getTemplateForEdit(id: string) {
+  await requireSession();
+
+  return prisma.emailTemplate.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      departmentId: true,
+      categoryId: true,
+      subject: true,
+      body: true,
+      templateType: true,
+      htmlContent: true,
+    },
+  });
 }
 
 export async function getTemplate(id: string) {
@@ -301,5 +383,6 @@ export async function archiveTemplate(id: string) {
 }
 
 export async function getCategories() {
-  return prisma.emailCategory.findMany({ orderBy: { name: "asc" } });
+  await requireSession();
+  return getCachedCategories();
 }

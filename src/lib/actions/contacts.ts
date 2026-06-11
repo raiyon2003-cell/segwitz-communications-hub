@@ -53,8 +53,23 @@ export async function getContact(id: string) {
           sentEmail: { select: { subject: true, status: true } },
         },
         orderBy: { occurredAt: "desc" },
+        take: 50,
       },
     },
+  });
+}
+
+export async function getContactForEdit(id: string) {
+  await requireSession();
+  return prisma.contact.findUnique({ where: { id } });
+}
+
+export async function getContactsForCompose() {
+  await requireSession();
+  return prisma.contact.findMany({
+    select: { id: true, name: true, email: true, company: true },
+    orderBy: { name: "asc" },
+    take: 200,
   });
 }
 

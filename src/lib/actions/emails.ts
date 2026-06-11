@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth/session";
 import { hasPermission } from "@/lib/permissions";
@@ -73,44 +73,54 @@ export async function sendEmail(formData: FormData) {
       },
     });
 
-    const attachments: Array<{ name: string; content: string; type: string }> =
-      [];
-    const attachmentFiles = formData.getAll("attachments") as File[];
+    const attachmentFiles = (formData.getAll("attachments") as File[]).filter(
+      (file) => file && file.size > 0
+    );
 
     for (const file of attachmentFiles) {
-      if (!file || file.size === 0) continue;
       if (file.size > MAX_FILE_SIZE) {
         throw new Error(`File ${file.name} exceeds 10MB limit`);
       }
       if (!ALLOWED_ATTACHMENT_TYPES.includes(file.type)) {
         throw new Error(`File type not allowed: ${file.name}`);
       }
+    }
 
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const path = `${sentEmail.id}/${Date.now()}-${file.name}`;
-      const fileUrl = await uploadFile(
-        STORAGE_BUCKETS.ATTACHMENTS,
-        path,
-        buffer,
-        file.type
-      );
+    const uploadedAttachments = await Promise.all(
+      attachmentFiles.map(async (file) => {
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const path = `${sentEmail.id}/${Date.now()}-${file.name}`;
+        const fileUrl = await uploadFile(
+          STORAGE_BUCKETS.ATTACHMENTS,
+          path,
+          buffer,
+          file.type
+        );
 
-      await prisma.emailAttachment.create({
-        data: {
-          sentEmailId: sentEmail.id,
-          fileName: file.name,
-          fileUrl,
-          fileSize: file.size,
-          mimeType: file.type,
-        },
-      });
+        return {
+          db: {
+            sentEmailId: sentEmail.id,
+            fileName: file.name,
+            fileUrl,
+            fileSize: file.size,
+            mimeType: file.type,
+          },
+          brevo: {
+            name: file.name,
+            content: buffer.toString("base64"),
+            type: file.type,
+          },
+        };
+      })
+    );
 
-      attachments.push({
-        name: file.name,
-        content: buffer.toString("base64"),
-        type: file.type,
+    if (uploadedAttachments.length > 0) {
+      await prisma.emailAttachment.createMany({
+        data: uploadedAttachments.map((a) => a.db),
       });
     }
+
+    const attachments = uploadedAttachments.map((a) => a.brevo);
 
     try {
       const ccList = input.cc
@@ -186,6 +196,7 @@ export async function sendEmail(formData: FormData) {
     revalidatePath("/history");
     revalidatePath("/dashboard");
     revalidatePath("/timeline");
+    revalidateTag("dashboard", "max");
     return actionSuccess({ id: sentEmail.id });
   } catch (error) {
     return actionError(error);
@@ -231,11 +242,16 @@ export async function getEmailHistory(filters?: {
   const [emails, total] = await Promise.all([
     prisma.sentEmail.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        recipient: true,
+        subject: true,
+        status: true,
+        sentAt: true,
+        brevoMessageId: true,
         template: { select: { name: true } },
         department: { select: { name: true } },
         sentBy: { select: { firstName: true, lastName: true } },
-        attachments: true,
       },
       orderBy: { sentAt: "desc" },
       skip: (page - 1) * pageSize,
@@ -245,6 +261,53 @@ export async function getEmailHistory(filters?: {
   ]);
 
   return { emails, total, page, pageSize };
+}
+
+export async function getEmailHistoryForExport() {
+  const session = await requireSession();
+
+  const where: Record<string, unknown> = {};
+  if (session.dbUser.role === "STAFF" || session.dbUser.role === "VIEW_ONLY") {
+    where.sentById = session.dbUser.id;
+  }
+
+  const BATCH_SIZE = 500;
+  const rows: Array<{
+    recipient: string;
+    subject: string;
+    status: string;
+    sentAt: Date;
+    brevoMessageId: string | null;
+    template: { name: string } | null;
+    department: { name: string } | null;
+    sentBy: { firstName: string; lastName: string };
+  }> = [];
+
+  let page = 1;
+  while (true) {
+    const batch = await prisma.sentEmail.findMany({
+      where,
+      select: {
+        recipient: true,
+        subject: true,
+        status: true,
+        sentAt: true,
+        brevoMessageId: true,
+        template: { select: { name: true } },
+        department: { select: { name: true } },
+        sentBy: { select: { firstName: true, lastName: true } },
+      },
+      orderBy: { sentAt: "desc" },
+      skip: (page - 1) * BATCH_SIZE,
+      take: BATCH_SIZE,
+    });
+
+    rows.push(...batch);
+    if (batch.length < BATCH_SIZE) break;
+    page++;
+  }
+
+  return rows;
 }
 
 export async function getCommunicationTimeline(contactId?: string) {

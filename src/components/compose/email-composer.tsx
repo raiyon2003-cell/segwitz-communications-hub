@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import { useRouter } from "next/navigation";
 import { sendEmail } from "@/lib/actions/emails";
+import { getTemplateForCompose } from "@/lib/actions/templates";
 import { replaceVariables } from "@/lib/services/variable-parser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,21 +19,48 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HtmlEmailPreview } from "@/components/templates/html-email-preview";
 import { toast } from "sonner";
-import type { Contact, EmailTemplate, TemplateVariable } from "@prisma/client";
+import type { TemplateVariable } from "@prisma/client";
 
-type TemplateWithRelations = EmailTemplate & {
+type TemplateSummary = {
+  id: string;
+  name: string;
+  subject: string;
+  templateType: string;
+  department: { name: string };
+};
+
+type LoadedTemplate = {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  htmlContent: string | null;
+  templateType: string;
   variables: TemplateVariable[];
   department: { name: string };
 };
 
+type ComposeContact = {
+  id: string;
+  name: string;
+  email: string;
+  company: string | null;
+};
+
 interface EmailComposerProps {
-  templates: TemplateWithRelations[];
-  contacts: Contact[];
+  templateSummaries: TemplateSummary[];
+  contacts: ComposeContact[];
 }
 
-export function EmailComposer({ templates, contacts }: EmailComposerProps) {
+export const EmailComposer = memo(function EmailComposer({
+  templateSummaries,
+  contacts,
+}: EmailComposerProps) {
   const router = useRouter();
   const [templateId, setTemplateId] = useState("");
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<LoadedTemplate | null>(null);
+  const [loadingTemplate, setLoadingTemplate] = useState(false);
   const [contactId, setContactId] = useState("");
   const [to, setTo] = useState("");
   const [cc, setCc] = useState("");
@@ -44,12 +72,19 @@ export function EmailComposer({ templates, contacts }: EmailComposerProps) {
   const [loading, setLoading] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  const selectedTemplate = templates.find((t) => t.id === templateId);
-
-  function handleTemplateChange(id: string) {
+  const handleTemplateChange = useCallback(async (id: string) => {
     setTemplateId(id);
-    const template = templates.find((t) => t.id === id);
-    if (template) {
+    setLoadingTemplate(true);
+    setSelectedTemplate(null);
+
+    try {
+      const template = await getTemplateForCompose(id);
+      if (!template) {
+        toast.error("Template not found or not approved");
+        return;
+      }
+
+      setSelectedTemplate(template);
       setSubject(template.subject);
       setBody(
         template.templateType === "HTML" && template.htmlContent
@@ -61,23 +96,30 @@ export function EmailComposer({ templates, contacts }: EmailComposerProps) {
         vars[v.variableName] = "";
       });
       setVariables(vars);
+    } catch {
+      toast.error("Failed to load template");
+    } finally {
+      setLoadingTemplate(false);
     }
-  }
+  }, []);
 
-  function handleContactChange(id: string) {
-    setContactId(id);
-    const contact = contacts.find((c) => c.id === id);
-    if (contact) {
-      setTo(contact.email);
-      setVariables((prev) => ({
-        ...prev,
-        client_name: contact.name,
-        candidate_name: contact.name,
-        employee_name: contact.name,
-        company_name: contact.company || "",
-      }));
-    }
-  }
+  const handleContactChange = useCallback(
+    (id: string) => {
+      setContactId(id);
+      const contact = contacts.find((c) => c.id === id);
+      if (contact) {
+        setTo(contact.email);
+        setVariables((prev) => ({
+          ...prev,
+          client_name: contact.name,
+          candidate_name: contact.name,
+          employee_name: contact.name,
+          company_name: contact.company || "",
+        }));
+      }
+    },
+    [contacts]
+  );
 
   const previewSubject = useMemo(
     () => replaceVariables(subject, variables),
@@ -92,7 +134,7 @@ export function EmailComposer({ templates, contacts }: EmailComposerProps) {
     return replaceVariables(content, variables);
   }, [body, variables, selectedTemplate]);
 
-  async function handleSend() {
+  const handleSend = useCallback(async () => {
     if (!templateId || !to) {
       toast.error("Template and recipient are required");
       return;
@@ -124,19 +166,40 @@ export function EmailComposer({ templates, contacts }: EmailComposerProps) {
       toast.error(result.error);
     }
     setLoading(false);
-  }
+  }, [
+    templateId,
+    to,
+    contactId,
+    cc,
+    bcc,
+    subject,
+    body,
+    variables,
+    attachments,
+    router,
+  ]);
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <div className="space-y-4">
         <div className="space-y-2">
           <Label>Template</Label>
-          <Select value={templateId} onValueChange={handleTemplateChange}>
+          <Select
+            value={templateId}
+            onValueChange={handleTemplateChange}
+            disabled={loadingTemplate}
+          >
             <SelectTrigger>
-              <SelectValue placeholder="Select approved template" />
+              <SelectValue
+                placeholder={
+                  loadingTemplate
+                    ? "Loading template..."
+                    : "Select approved template"
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              {templates.map((t) => (
+              {templateSummaries.map((t) => (
                 <SelectItem key={t.id} value={t.id}>
                   {t.name} ({t.department.name})
                 </SelectItem>
@@ -232,7 +295,10 @@ export function EmailComposer({ templates, contacts }: EmailComposerProps) {
           <Button onClick={() => setShowPreview(true)} variant="outline">
             Preview
           </Button>
-          <Button onClick={handleSend} disabled={loading}>
+          <Button
+            onClick={handleSend}
+            disabled={loading || loadingTemplate || !selectedTemplate}
+          >
             {loading ? "Sending..." : "Send Email"}
           </Button>
         </div>
@@ -266,7 +332,10 @@ export function EmailComposer({ templates, contacts }: EmailComposerProps) {
             )}
             {attachments && attachments.length > 0 && (
               <div className="text-sm text-muted-foreground">
-                Attachments: {Array.from(attachments).map((f) => f.name).join(", ")}
+                Attachments:{" "}
+                {Array.from(attachments)
+                  .map((f) => f.name)
+                  .join(", ")}
               </div>
             )}
           </CardContent>
@@ -274,4 +343,4 @@ export function EmailComposer({ templates, contacts }: EmailComposerProps) {
       )}
     </div>
   );
-}
+});

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getTemplate } from "@/lib/actions/templates";
+import { getTemplateForEdit } from "@/lib/actions/templates";
 import { getDepartments } from "@/lib/actions/departments";
 import { getCategories } from "@/lib/actions/templates";
 import { TemplateForm } from "@/components/templates/template-form";
@@ -11,7 +11,7 @@ export default async function EditTemplatePage({
 }) {
   const { id } = await params;
   const [template, departments, categories] = await Promise.all([
-    getTemplate(id),
+    getTemplateForEdit(id),
     getDepartments(),
     getCategories(),
   ]);

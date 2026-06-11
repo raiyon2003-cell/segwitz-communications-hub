@@ -1,6 +1,10 @@
 import { Pool } from "pg";
 
+let pool: Pool | undefined;
+
 export function createPgPool() {
+  if (pool) return pool;
+
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set");
@@ -9,11 +13,13 @@ export function createPgPool() {
   const isSupabase = connectionString.includes("supabase.co");
   const cleanUrl = connectionString.replace(/\?.*$/, "");
 
-  return new Pool({
+  pool = new Pool({
     connectionString: cleanUrl,
-    max: process.env.VERCEL ? 1 : 10,
-    idleTimeoutMillis: 30000,
+    max: process.env.VERCEL ? 3 : 10,
+    idleTimeoutMillis: 20000,
     connectionTimeoutMillis: 10000,
     ...(isSupabase ? { ssl: { rejectUnauthorized: false } } : {}),
   });
+
+  return pool;
 }

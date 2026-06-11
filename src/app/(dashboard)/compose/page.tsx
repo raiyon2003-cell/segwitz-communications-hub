@@ -1,11 +1,11 @@
-import { getTemplates } from "@/lib/actions/templates";
-import { getContacts } from "@/lib/actions/contacts";
+import { getApprovedTemplateSummaries } from "@/lib/actions/templates";
+import { getContactsForCompose } from "@/lib/actions/contacts";
 import { EmailComposer } from "@/components/compose/email-composer";
 
 export default async function ComposePage() {
-  const [{ templates }, { contacts }] = await Promise.all([
-    getTemplates({ status: "APPROVED" }),
-    getContacts({ pageSize: 100 }),
+  const [templateSummaries, contacts] = await Promise.all([
+    getApprovedTemplateSummaries(),
+    getContactsForCompose(),
   ]);
 
   return (
@@ -16,7 +16,7 @@ export default async function ComposePage() {
           Select a template, fill variables, and send
         </p>
       </div>
-      <EmailComposer templates={templates} contacts={contacts} />
+      <EmailComposer templateSummaries={templateSummaries} contacts={contacts} />
     </div>
   );
 }

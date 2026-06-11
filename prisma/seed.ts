@@ -126,6 +126,13 @@ async function main() {
     if (error) throw error;
     authId = data.user!.id;
     console.log(`Created Supabase auth user: ${adminEmail}`);
+  } else {
+    const { error } = await supabase.auth.admin.updateUserById(authId, {
+      password: adminPassword,
+      email_confirm: true,
+    });
+    if (error) throw error;
+    console.log(`Reset password for admin: ${adminEmail}`);
   }
 
   const pmDept = await prisma.department.findFirst({

@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import {
   BarChart,
   Bar,
@@ -20,7 +21,7 @@ interface ChartsProps {
   emailsByDepartment: Array<{ name: string; count: number }>;
 }
 
-export function DashboardCharts({
+export const DashboardCharts = memo(function DashboardCharts({
   mostUsedTemplates,
   emailsByDepartment,
 }: ChartsProps) {
@@ -66,4 +67,4 @@ export function DashboardCharts({
       </div>
     </div>
   );
-}
+});

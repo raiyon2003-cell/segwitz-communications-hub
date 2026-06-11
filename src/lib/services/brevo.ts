@@ -23,7 +23,17 @@ export interface SendEmailParams {
   }>;
 }
 
+let brevoConfigCache: { config: BrevoConfig | null; expiresAt: number } | null =
+  null;
+
+const BREVO_CACHE_TTL_MS = 60_000;
+
 export async function getBrevoConfig(): Promise<BrevoConfig | null> {
+  const now = Date.now();
+  if (brevoConfigCache && brevoConfigCache.expiresAt > now) {
+    return brevoConfigCache.config;
+  }
+
   const settings = await prisma.setting.findMany({
     where: {
       key: {
@@ -35,12 +45,16 @@ export async function getBrevoConfig(): Promise<BrevoConfig | null> {
         ],
       },
     },
+    select: { key: true, value: true },
   });
 
   const map = Object.fromEntries(settings.map((s) => [s.key, s.value]));
-  if (!map.brevo_api_key || !map.brevo_sender_email) return null;
+  if (!map.brevo_api_key || !map.brevo_sender_email) {
+    brevoConfigCache = { config: null, expiresAt: now + BREVO_CACHE_TTL_MS };
+    return null;
+  }
 
-  return {
+  const config: BrevoConfig = {
     apiKey: map.brevo_api_key.startsWith("enc:")
       ? decrypt(map.brevo_api_key.slice(4))
       : map.brevo_api_key,
@@ -48,6 +62,13 @@ export async function getBrevoConfig(): Promise<BrevoConfig | null> {
     senderEmail: map.brevo_sender_email,
     replyToEmail: map.brevo_reply_to_email || map.brevo_sender_email,
   };
+
+  brevoConfigCache = { config, expiresAt: now + BREVO_CACHE_TTL_MS };
+  return config;
+}
+
+export function clearBrevoConfigCache() {
+  brevoConfigCache = null;
 }
 
 export async function sendEmailViaBrevo(
